@@ -14,37 +14,54 @@
       }
       this.processTime = gaussRandom() + 10.0;
 
-      this.run = function(onComplete) {
-        setTimeout(function() { onComplete() } , this.processTime * 100);
+      this.execute = function(onComplete) {
+        return setTimeout(function() { onComplete() } , this.processTime * 100);
       };
       return this;
     };
+
+    var Worker = function() {
+      this.jobs = [];
+
+      this.idle = function() {
+        return (this.jobs.length == 0);
+      };
+
+      this.pullJobs = function() {
+        var worker = this;
+        if (this.jobs[0]) {
+          var id = this.jobs[0].execute(function() {
+            console.log("Job[" + id + "] Completed.");
+            worker.jobs.shift();
+            worker.pullJobs();
+          });
+        }
+      };
+
+      this.addJob = function(job) {
+        if (this.idle()) {
+          this.jobs.push(job);
+          this.pullJobs();
+        } else {
+          this.jobs.push(job);
+        }
+      };
+
+      return this;
+    }
 
     var WorkersPool = function() {
       this.MAX_WORKERS = 10;
       this.workers = [];
       for (var i = 0; i < this.MAX_WORKERS; i++) {
-        this.workers.push([]);
+        this.workers.push(new Worker());
       }
 
-      this.enqueue = function(job) {
+      this.addJob = function(job) {
         var i = Math.floor(Math.random() * this.MAX_WORKERS);
-        this.workers[i].push(job);
-        if ( this.workers[i].length == 1 ) {
-          this.dequeue(i);
-        }
-      }
+        this.workers[i].addJob(job);
+      };
 
-      this.dequeue = function(worker_id) {
-        var job = this.workers[worker_id].shift();
-        if (job) {
-          var worker = this;
-          job.run(function() {
-            console.log(worker_id);
-            worker.dequeue(worker_id);
-          });
-        }
-      }
       return this;
     };
   </script>
