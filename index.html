@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <script>
+    var Job = function() {
+      var gaussRandom = function () {
+         var u = 2 * Math.random() - 1;
+         var v = 2 * Math.random() - 1;
+         var r = u * u + v * v;
+         if (r == 0 || r > 1) return gaussRandom();
+         var c = Math.sqrt(-2 * Math.log(r) / r);
+         return u * c;
+      }
+      this.processTime = gaussRandom() + 10.0;
+
+      this.run = function(onComplete) {
+        setTimeout(function() { onComplete() } , this.processTime * 100);
+      };
+      return this;
+    };
+
+    var WorkersPool = function() {
+      this.MAX_WORKERS = 10;
+      this.workers = [];
+      for (var i = 0; i < this.MAX_WORKERS; i++) {
+        this.workers.push([]);
+      }
+
+      this.enqueue = function(job) {
+        var i = Math.floor(Math.random() * this.MAX_WORKERS);
+        this.workers[i].push(job);
+        if ( this.workers[i].length == 1 ) {
+          this.dequeue(i);
+        }
+      }
+
+      this.dequeue = function(worker_id) {
+        var job = this.workers[worker_id].shift();
+        if (job) {
+          var worker = this;
+          job.run(function() {
+            console.log(worker_id);
+            worker.dequeue(worker_id);
+          });
+        }
+      }
+      return this;
+    };
+  </script>
+</head>
+<body>
+</body>
+</html>
