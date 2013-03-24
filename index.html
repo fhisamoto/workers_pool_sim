@@ -2,6 +2,10 @@
 <html>
 <head>
   <meta charset="utf-8" />
+  <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen">
+  <script src="http://code.jquery.com/jquery.js"></script>
+  <script src="bootstrap/js/bootstrap.min.js"></script>
+
   <script>
     var Job = function() {
       var gaussRandom = function () {
@@ -20,8 +24,10 @@
       return this;
     };
 
-    var Worker = function() {
+    var Worker = function(workerId) {
+      this.workerId = workerId;
       this.jobs = [];
+      this.MAX_JOBS = 10;
 
       this.idle = function() {
         return (this.jobs.length == 0);
@@ -31,8 +37,12 @@
         var worker = this;
         if (this.jobs[0]) {
           var id = this.jobs[0].execute(function() {
-            console.log("Job[" + id + "] Completed.");
             worker.jobs.shift();
+
+            console.log("Job[" + id + "] Completed.");
+            var percent = (worker.jobs.length / worker.MAX_JOBS) * 100;
+            $('#' + worker.workerId).css('width',  percent + '%');
+
             worker.pullJobs();
           });
         }
@@ -54,7 +64,8 @@
       this.MAX_WORKERS = 10;
       this.workers = [];
       for (var i = 0; i < this.MAX_WORKERS; i++) {
-        this.workers.push(new Worker());
+        var workerId = "worker_" + i;
+        this.workers.push(new Worker(workerId));
       }
 
       this.addJob = function(job) {
@@ -64,8 +75,22 @@
 
       return this;
     };
+
+    var pool = new WorkersPool();
+    function onLoad() {
+      pool.workers.forEach(function(worker) {
+        var progressBar = '<div class="progress progress-info progress-striped"><div id="' + worker.workerId + '" class="bar" style="width:0%"></div></div>';
+        $('#sim_bars').append(progressBar);
+      });
+
+      for(var i = 0; i < 50; i++) {
+        pool.addJob(new Job());
+      }
+
+    }
   </script>
 </head>
-<body>
+<body onLoad="onLoad()">
+  <div id="sim_bars" style="width:400px"></div>
 </body>
 </html>
