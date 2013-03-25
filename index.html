@@ -17,9 +17,15 @@
          return u * c;
       }
       this.processTime = gaussRandom() + 10.0;
-
+      this.startTime = (new Date()).getTime();
+      this.endTime = null;
       this.execute = function(onComplete) {
-        return setTimeout(function() { onComplete() } , this.processTime * 100);
+        var job = this;
+        return setTimeout(function() {
+          job.endTime = (new Date()).getTime();
+          var totalTime =  job.endTime - job.startTime;
+          onComplete(totalTime);
+        } , this.processTime * 100);
       };
       return this;
     };
@@ -27,6 +33,10 @@
     var Worker = function(workerId) {
       this.workerId = workerId;
       this.jobs = [];
+      this.totalTime = 0;
+      this.totalTime2 = 0;
+      this.numJobs = 0;
+
       this.MAX_JOBS = 10;
 
       this.idle = function() {
@@ -36,10 +46,13 @@
       this.pullJobs = function() {
         var worker = this;
         if (this.jobs[0]) {
-          var id = this.jobs[0].execute(function() {
+          var id = this.jobs[0].execute(function(totalTime) {
             worker.jobs.shift();
+            worker.totalTime += totalTime;
+            worker.totalTime2 += totalTime * totalTime;
+            worker.numJobs += 1;
 
-            console.log("Job[" + id + "] Completed.");
+            // console.log("Job[" + id + "] Completed.");
             var percent = (worker.jobs.length / worker.MAX_JOBS) * 100;
             $('#' + worker.workerId).css('width',  percent + '%');
 
@@ -79,6 +92,29 @@
         this.workers[j].addJob(job);
       };
 
+      this.totalTime = 0;
+      this.totalTime2 = 0;
+      this.numJobs = 0;
+
+      this.summarize = function() {
+        for( var i = 0; i < this.MAX_WORKERS; i++ ) {
+          this.totalTime += this.workers[i].totalTime;
+          this.totalTime2 += this.workers[i].totalTime2;
+          this.numJobs += this.workers[i].numJobs;
+        }
+      };
+
+      this.avg = function() {
+        if ( this.numJobs ) {
+          return this.totalTime / this.numJobs;
+        }
+        return 0;
+      };
+
+      this.std = function() {
+        return Math.sqrt(this.totalTime2 / this.numJobs - (this.avg() * this.avg()));
+      };
+
       return this;
     };
 
@@ -91,7 +127,13 @@
     }
 
     function createJobs() {
-      for(var i = 0; i < 20; i++) { pool.addJob(new Job()); }
+      setInterval(function() {
+        pool.summarize();
+        $('#jobs').val(pool.numJobs);
+        $('#avg').val(pool.avg());
+        $('#std').val(pool.std());
+        for(var i = 0; i < 1; i++) { pool.addJob(new Job()); }
+      }, 100);
     }
   </script>
 </head>
@@ -101,6 +143,9 @@
       <button class="btn btn-large btn-primary" type="button" onClick="createJobs()">Create Jobs</button>
     </p>
     <div id="sim_bars" style="width:400px"></div>
+    <input id="jobs" type="text" class="input-small" placeholder="num jobs">
+    <input id="avg" type="text" class="input-small" placeholder="avg">
+    <input id="std" type="text" class="input-small" placeholder="std">
   </div>
 </body>
 </html>
