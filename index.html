@@ -16,7 +16,7 @@
          var c = Math.sqrt(-2 * Math.log(r) / r);
          return u * c;
       }
-      this.processTime = gaussRandom() + 10.0;
+      this.processTime = (gaussRandom() * 80.0) + 120.0;
       this.startTime = (new Date()).getTime();
       this.endTime = null;
       this.execute = function(onComplete) {
@@ -25,7 +25,7 @@
           job.endTime = (new Date()).getTime();
           var totalTime =  job.endTime - job.startTime;
           onComplete(totalTime);
-        } , this.processTime * 100);
+        }, this.processTime);
       };
       return this;
     };
@@ -74,7 +74,7 @@
     }
 
     var WorkersPool = function() {
-      this.MAX_WORKERS = 10;
+      this.MAX_WORKERS = 40;
       this.workers = [];
       for (var i = 0; i < this.MAX_WORKERS; i++) {
         var workerId = "worker_" + i;
@@ -132,7 +132,7 @@
         $('#jobs').val(pool.numJobs);
         $('#avg').val(pool.avg());
         $('#std').val(pool.std());
-        for(var i = 0; i < 1; i++) { pool.addJob(new Job()); }
+        for(var i = 0; i < 25; i++) { pool.addJob(new Job()); }
       }, 100);
     }
   </script>
