@@ -69,8 +69,13 @@
       }
 
       this.addJob = function(job) {
-        var i = Math.floor(Math.random() * this.MAX_WORKERS);
-        this.workers[i].addJob(job);
+        var idlingWorkers = this.workers.filter(function(worker) { worker.idle() });
+        if (idlingWorkers.length > 0) {
+          idlingWorkers[0].addJob(job)
+        } else {
+          var i = Math.floor(Math.random() * this.MAX_WORKERS);
+          this.workers[i].addJob(job);
+        }
       };
 
       return this;
@@ -82,15 +87,19 @@
         var progressBar = '<div class="progress progress-info progress-striped"><div id="' + worker.workerId + '" class="bar" style="width:0%"></div></div>';
         $('#sim_bars').append(progressBar);
       });
+    }
 
-      for(var i = 0; i < 50; i++) {
-        pool.addJob(new Job());
-      }
-
+    function createJobs() {
+      for(var i = 0; i < 20; i++) { pool.addJob(new Job()); }
     }
   </script>
 </head>
 <body onLoad="onLoad()">
-  <div id="sim_bars" style="width:400px"></div>
+  <div class="container">
+    <p>
+      <button class="btn btn-large btn-primary" type="button" onClick="createJobs()">Create Jobs</button>
+    </p>
+    <div id="sim_bars" style="width:400px"></div>
+  </div>
 </body>
 </html>
