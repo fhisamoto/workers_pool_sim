@@ -69,13 +69,14 @@
       }
 
       this.addJob = function(job) {
-        var idlingWorkers = this.workers.filter(function(worker) { worker.idle() });
-        if (idlingWorkers.length > 0) {
-          idlingWorkers[0].addJob(job)
-        } else {
-          var i = Math.floor(Math.random() * this.MAX_WORKERS);
-          this.workers[i].addJob(job);
+        for (var k = 0; k < this.MAX_WORKERS; k++) {
+          if ( this.workers[k].idle() ){
+            this.workers[k].addJob(job);
+            return;
+          }
         }
+        var j = Math.floor(Math.random() * this.MAX_WORKERS);
+        this.workers[j].addJob(job);
       };
 
       return this;
