@@ -117,6 +117,28 @@
         }
       };
 
+      this.oldTotalTime = 0;
+      this.oldTotalTime2 = 0;
+      this.oldNumJobs = 0;
+
+      this.partialAvg = 0;
+      this.partialStdev = 0;
+
+      this.summarizePeriod = function() {
+        var diffTotal = this.totalTime - this.oldTotalTime;
+        var diffTotal2 = this.totalTime2 - this.oldTotalTime2;
+        var diffNumJobs = this.numJobs - this.oldNumJobs;
+        
+        
+        this.partialAvg = diffTotal / diffNumJobs;
+        this.partialStdev = Math.sqrt( diffTotal2 / diffNumJobs - this.partialAvg * this.partialAvg);
+        
+        this.oldTotalTime += diffTotal;
+        this.oldTotalTime2 += diffTotal2;
+        this.oldNumJobs += diffNumJobs;         
+        
+      };
+      
       this.avg = function() {
         if ( this.numJobs ) {
           return this.totalTime / this.numJobs;
@@ -147,6 +169,12 @@
         $('#std').val(pool.std());
         for(var i = 0; i < 25; i++) { pool.addJob(new Job()); }
       }, 100);
+      
+      setInterval(function() {
+        pool.summarizePeriod();
+        $('#pAvg').val(pool.partialAvg);
+        $('#pStd').val(pool.partialStdev);
+      }, 1000);
     }
   </script>
 </head>
@@ -155,10 +183,12 @@
     <p>
       <button class="btn btn-large btn-primary" type="button" onClick="createJobs()">Create Jobs</button>
     </p>
-    <div id="sim_bars" style="width:400px"></div>
-    <input id="jobs" type="text" class="input-small" placeholder="num jobs">
+    <input id="pAvg" type="text" class="input-small" placeholder="avg">
+    <input id="pStd" type="text" class="input-small" placeholder="std"><br>
     <input id="avg" type="text" class="input-small" placeholder="avg">
     <input id="std" type="text" class="input-small" placeholder="std">
+    <input id="jobs" type="text" class="input-small" placeholder="num jobs">
+    <div id="sim_bars" style="width:400px"></div>
   </div>
 </body>
 </html>
