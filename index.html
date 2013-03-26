@@ -16,7 +16,7 @@
          var c = Math.sqrt(-2 * Math.log(r) / r);
          return u * c;
       }
-      this.processTime = (gaussRandom() * 80.0) + 120.0;
+      this.processTime = (gaussRandom() * 30.0) + 120.0;
       this.startTime = (new Date()).getTime();
       this.endTime = null;
       this.execute = function(onComplete) {
@@ -33,11 +33,11 @@
     var Worker = function(workerId) {
       this.workerId = workerId;
       this.jobs = [];
+      this.MAX_JOBS = 10;
+
       this.totalTime = 0;
       this.totalTime2 = 0;
       this.numJobs = 0;
-
-      this.MAX_JOBS = 10;
 
       this.idle = function() {
         return (this.jobs.length == 0);
@@ -74,22 +74,35 @@
     }
 
     var WorkersPool = function() {
-      this.MAX_WORKERS = 40;
+      this.MAX_WORKERS = 35;
       this.workers = [];
+
       for (var i = 0; i < this.MAX_WORKERS; i++) {
         var workerId = "worker_" + i;
         this.workers.push(new Worker(workerId));
       }
 
-      this.addJob = function(job) {
-        for (var k = 0; k < this.MAX_WORKERS; k++) {
-          if ( this.workers[k].idle() ){
-            this.workers[k].addJob(job);
-            return;
-          }
+      this.nextW = 0;
+      this.nextWorker = function() {
+        if (this.nextW < this.MAX_WORKERS - 1) {
+          this.nextW = this.nextW + 1;
+        } else {
+          this.nextW = 0;
         }
+        return this.nextW;
+      };
+
+      this.addJob = function(job) {
+        // for (var k = 0; k < this.MAX_WORKERS; k++) {
+        //   if ( this.workers[k].idle() ){
+        //     this.workers[k].addJob(job);
+        //     return;
+        //   }
+        // }
         var j = Math.floor(Math.random() * this.MAX_WORKERS);
         this.workers[j].addJob(job);
+        // var l = this.nextWorker();
+        // this.workers[l].addJob(job);
       };
 
       this.totalTime = 0;
