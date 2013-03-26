@@ -20,7 +20,7 @@
          var c = Math.sqrt(-2 * Math.log(r) / r);
          return u * c;
       }
-      this.processTime = (gaussRandom() * 30.0) + 120.0;
+      this.processTime = (gaussRandom() * 0.0) + 120.0;
       this.startTime = (new Date()).getTime();
       this.endTime = null;
       this.execute = function(onComplete) {
@@ -154,21 +154,6 @@
         return Math.sqrt(this.totalTime2 / this.numJobs - (this.avg() * this.avg()));
       };
 
-      this.data = function () {
-        var data = [];
-        for (var i = 0; i < this.MAX_WORKERS; i++) {
-          
-          var count = this.workers[i].length
-          if (count === undefined) {
-            count = 0;
-          }
-          
-          var point = { x: i, y: count }
-          data.push(point);
-        }
-        return data;
-      }
-
       return this;
     };
 
@@ -178,31 +163,6 @@
         var progressBar = '<div class="progress progress-info progress-striped"><div id="' + worker.workerId + '" class="bar" style="width:0%"></div></div>';
         $('#sim_bars').append(progressBar);
       });
-      
-      var graph = new Rickshaw.Graph ( {
-        element: document.querySelector("#chart"),
-        width: 550,
-        height: 250,
-        series: [ {
-          color: 'steelblue',
-          data: [{ x:1, y:1 } , {x: 2, y: 2} ]
-        } ]
-      });  
-        
-      var xAxis = new Rickshaw.Graph.Axis.Y ({
-        graph: graph
-      });
-      
-      graph.render();
-      
-      setInterval(function() {
-        var data = pool.data();
-        var series = [ { color: 'steelblue', data: data} ];
-        graph.update();
-        graph.render();
-        console.log(data);
-      }, 1000);
-
       
     }
 
@@ -215,10 +175,50 @@
         for(var i = 0; i < 25; i++) { pool.addJob(new Job()); }
       }, 100);
       
+      var palette = new Rickshaw.Color.Palette();
+      
+      var graph = new Rickshaw.Graph ( {
+        element: document.querySelector("#chart"),
+        renderer: 'line',
+        width: 550,
+        height: 250,
+        series: [ {
+            name: 'Average',
+            color: palette.color(),
+            data: [ { x: 0, y: 0 } ]
+          }, {
+            name: 'Standard deviation',
+            color: palette.color(),
+            data: [ { x: 0, y: 0 } ]
+          }]
+      });  
+        
+      var yAxis = new Rickshaw.Graph.Axis.Y ({
+        graph: graph
+      });
+      
+      var xAxis = new Rickshaw.Graph.Axis.X ({
+          graph: graph
+      } );
+      
+      var legend = new Rickshaw.Graph.Legend( {
+              element: document.querySelector('#legend'),
+              graph: graph
+      } );
+      
+      graph.render();
+              
+      var i = 0;
       setInterval(function() {
         pool.summarizePeriod();
         $('#pAvg').val(pool.partialAvg);
         $('#pStd').val(pool.partialStdev);
+        
+        graph.series[0].data.push({ x: i, y: pool.partialAvg });
+        graph.series[1].data.push({ x: i, y: pool.partialStdev });
+        
+        i++;
+        graph.update();
       }, 1000);
     }
   </script>
@@ -232,11 +232,11 @@
     <input id="pStd" type="text" class="input-small" placeholder="std"><br>
     <input id="avg" type="text" class="input-small" placeholder="avg">
     <input id="std" type="text" class="input-small" placeholder="std">
-    <div id="chart_container">
     <input id="jobs" type="text" class="input-small" placeholder="num jobs">
-      <div id="y_axis"></div>
+    <div id="chart_container">
       <div id="chart"></div>
     </div>
+    <div id="legend"></div><br>
     <div id="sim_bars" style="width:400px"></div>
   </div>
 </body>
