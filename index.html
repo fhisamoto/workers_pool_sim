@@ -6,6 +6,10 @@
   <script src="http://code.jquery.com/jquery.js"></script>
   <script src="bootstrap/js/bootstrap.min.js"></script>
 
+  <link href="rickshaw/rickshaw.min.css" rel="stylesheet">
+  <script src="rickshaw/vendor/d3.v2.js"></script>
+  <script src="rickshaw/rickshaw.min.js"></script>
+
   <script>
     var Job = function() {
       var gaussRandom = function () {
@@ -150,6 +154,21 @@
         return Math.sqrt(this.totalTime2 / this.numJobs - (this.avg() * this.avg()));
       };
 
+      this.data = function () {
+        var data = [];
+        for (var i = 0; i < this.MAX_WORKERS; i++) {
+          
+          var count = this.workers[i].length
+          if (count === undefined) {
+            count = 0;
+          }
+          
+          var point = { x: i, y: count }
+          data.push(point);
+        }
+        return data;
+      }
+
       return this;
     };
 
@@ -159,6 +178,32 @@
         var progressBar = '<div class="progress progress-info progress-striped"><div id="' + worker.workerId + '" class="bar" style="width:0%"></div></div>';
         $('#sim_bars').append(progressBar);
       });
+      
+      var graph = new Rickshaw.Graph ( {
+        element: document.querySelector("#chart"),
+        width: 550,
+        height: 250,
+        series: [ {
+          color: 'steelblue',
+          data: [{ x:1, y:1 } , {x: 2, y: 2} ]
+        } ]
+      });  
+        
+      var xAxis = new Rickshaw.Graph.Axis.Y ({
+        graph: graph
+      });
+      
+      graph.render();
+      
+      setInterval(function() {
+        var data = pool.data();
+        var series = [ { color: 'steelblue', data: data} ];
+        graph.update();
+        graph.render();
+        console.log(data);
+      }, 1000);
+
+      
     }
 
     function createJobs() {
@@ -187,7 +232,11 @@
     <input id="pStd" type="text" class="input-small" placeholder="std"><br>
     <input id="avg" type="text" class="input-small" placeholder="avg">
     <input id="std" type="text" class="input-small" placeholder="std">
+    <div id="chart_container">
     <input id="jobs" type="text" class="input-small" placeholder="num jobs">
+      <div id="y_axis"></div>
+      <div id="chart"></div>
+    </div>
     <div id="sim_bars" style="width:400px"></div>
   </div>
 </body>
