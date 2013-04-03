@@ -73,8 +73,26 @@
           this.jobs.push(job);
         }
       };
-
       return this;
+    }
+
+    var Summary = function(numJobs, totalTime, totalTime2) {
+      this.numJobs = numJobs;
+      this.totalTime = totalTime;
+      this.totalTime2 = totalTime2;
+      this.average =  function() {
+        if (this.numJobs > 0) {
+          return this.totalTime / this.numJobs;
+        }
+        return 0;
+      };
+
+      this.standardDeviation = function() {
+        if (this.average() > 0) {
+          return Math.sqrt(this.totalTime2 / this.numJobs - (this.average() * this.average()));
+        }
+        return 0;
+      };
     }
 
     var WorkersPool = function() {
@@ -103,10 +121,10 @@
         //     return;
         //   }
         // }
-        var j = Math.floor(Math.random() * this.MAX_WORKERS);
-        this.workers[j].addJob(job);
-        // var l = this.nextWorker();
-        // this.workers[l].addJob(job);
+        // var j = Math.floor(Math.random() * this.MAX_WORKERS);
+        // this.workers[j].addJob(job);
+        var l = this.nextWorker();
+        this.workers[l].addJob(job);
       };
 
       this.totalTime = 0;
@@ -119,43 +137,37 @@
           this.totalTime2 += this.workers[i].totalTime2;
           this.numJobs += this.workers[i].numJobs;
         }
-      };
-
-      this.oldTotalTime = 0;
-      this.oldTotalTime2 = 0;
-      this.oldNumJobs = 0;
-
-      this.partialAvg = 0;
-      this.partialStdev = 0;
-
-      this.summarizePeriod = function() {
-        var diffTotal = this.totalTime - this.oldTotalTime;
-        var diffTotal2 = this.totalTime2 - this.oldTotalTime2;
-        var diffNumJobs = this.numJobs - this.oldNumJobs;
-        
-        
-        this.partialAvg = diffTotal / diffNumJobs;
-        this.partialStdev = Math.sqrt( diffTotal2 / diffNumJobs - this.partialAvg * this.partialAvg);
-        
-        this.oldTotalTime += diffTotal;
-        this.oldTotalTime2 += diffTotal2;
-        this.oldNumJobs += diffNumJobs;         
-        
-      };
-      
-      this.avg = function() {
-        if ( this.numJobs ) {
-          return this.totalTime / this.numJobs;
-        }
-        return 0;
-      };
-
-      this.std = function() {
-        return Math.sqrt(this.totalTime2 / this.numJobs - (this.avg() * this.avg()));
+        return(new Summary(this.numJobs, this.totalTime, this.totalTime2));
       };
 
       return this;
     };
+
+    function createGraph() {
+      var palette = new Rickshaw.Color.Palette();
+      var graph = new Rickshaw.Graph ( {
+        element: document.querySelector("#chart"),
+        renderer: 'line',
+        width: 550,
+        height: 250,
+        series: [ {
+          name: 'Average',
+          color: palette.color(),
+          data: [ { x: 0, y: 0 } ]
+        }, {
+          name: 'Standard deviation',
+          color: palette.color(),
+          data: [ { x: 0, y: 0 } ]
+        } ]
+      });
+      var yAxis = new Rickshaw.Graph.Axis.Y ({ graph: graph });
+      var xAxis = new Rickshaw.Graph.Axis.X ({ graph: graph });
+      var legend = new Rickshaw.Graph.Legend({
+        element: document.querySelector('#legend'),
+        graph: graph
+      });
+      return graph;
+    }
 
     var pool = new WorkersPool();
     function onLoad() {
@@ -163,62 +175,38 @@
         var progressBar = '<div class="progress progress-info progress-striped"><div id="' + worker.workerId + '" class="bar" style="width:0%"></div></div>';
         $('#sim_bars').append(progressBar);
       });
-      
     }
 
     function createJobs() {
       setInterval(function() {
-        pool.summarize();
-        $('#jobs').val(pool.numJobs);
-        $('#avg').val(pool.avg());
-        $('#std').val(pool.std());
         for(var i = 0; i < 25; i++) { pool.addJob(new Job()); }
       }, 100);
-      
-      var palette = new Rickshaw.Color.Palette();
-      
-      var graph = new Rickshaw.Graph ( {
-        element: document.querySelector("#chart"),
-        renderer: 'line',
-        width: 550,
-        height: 250,
-        series: [ {
-            name: 'Average',
-            color: palette.color(),
-            data: [ { x: 0, y: 0 } ]
-          }, {
-            name: 'Standard deviation',
-            color: palette.color(),
-            data: [ { x: 0, y: 0 } ]
-          }]
-      });  
-        
-      var yAxis = new Rickshaw.Graph.Axis.Y ({
-        graph: graph
-      });
-      
-      var xAxis = new Rickshaw.Graph.Axis.X ({
-          graph: graph
-      } );
-      
-      var legend = new Rickshaw.Graph.Legend( {
-              element: document.querySelector('#legend'),
-              graph: graph
-      } );
-      
+
+      var graph = createGraph();
       graph.render();
-              
+
       var i = 0;
-      setInterval(function() {
-        pool.summarizePeriod();
-        $('#pAvg').val(pool.partialAvg);
-        $('#pStd').val(pool.partialStdev);
-        
-        graph.series[0].data.push({ x: i, y: pool.partialAvg });
-        graph.series[1].data.push({ x: i, y: pool.partialStdev });
-        
-        i++;
-        graph.update();
+      var summary = null;
+      var lastSummary = null;
+      setInterval(function(){
+        summary = pool.summarize();
+        if (lastSummary) {
+          var diffSummary = new Summary(summary.numJobs - lastSummary.numJobs,
+            summary.totalTime - lastSummary.totalTime,
+            summary.totalTime2 - lastSummary.totalTime2
+          );
+          $('#pAvg').val(diffSummary.average());
+          $('#pStd').val(diffSummary.standardDeviation());
+
+          graph.series[0].data.push({ x: i, y: diffSummary.average() });
+          graph.series[1].data.push({ x: i, y: diffSummary.standardDeviation() });
+          graph.update();
+          i++;
+        }
+        $('#jobs').val(summary.numJobs);
+        $('#avg').val(summary.average());
+        $('#std').val(summary.standardDeviation());
+        lastSummary = summary;
       }, 1000);
     }
   </script>
