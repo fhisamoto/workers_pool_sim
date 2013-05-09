@@ -75,8 +75,9 @@ var Summary = function(numJobs, totalTime, totalTime2) {
   };
 
   this.standardDeviation = function() {
-    if (this.average() > 0) {
-      return Math.sqrt(this.totalTime2 / this.numJobs - (this.average() * this.average()));
+    var avg = this.average();
+    if (avg > 0) {
+      return Math.sqrt(this.totalTime2 / this.numJobs - (avg * avg));
     }
     return 0;
   };
