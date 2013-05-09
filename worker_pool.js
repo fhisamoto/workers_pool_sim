@@ -82,8 +82,40 @@ var Summary = function(numJobs, totalTime, totalTime2) {
   };
 }
 
+var RoundRobinStrategy = function() {
+  this.nextWorker = 0;
+
+  this.addJob = function(job, workers) {
+    if (this.nextWorker < workers.length - 1) {
+      this.nextWorker = this.nextWorker + 1;
+    } else {
+      this.nextWorker = 0;
+    }
+    workers[this.nextWorker].addJob(job);
+  };
+};
+
+var RandomWorkerStrategy= function() {
+  this.addJob = function(job, workers) {
+    var j = Math.floor(Math.random() * workers.lenght);
+    workers[j].addJob(job);
+  };
+};
+
+var FirstAvailableStrategy = function() {
+  this.addJob = function(job, workers) {
+    for (var k = 0; k < workers.length; k++) {
+      if ( workers[k].idle() ){
+        workers[k].addJob(job);
+        return;
+      }
+    }
+  };
+};
+
 var WorkersPool = function(options) {
   this.MAX_WORKERS = (options && options.numWorkers) ? options.numWorkers : 30;
+  this.strategy = (options && options.strategy) ? options.strategy : new RoundRobinStrategy();
   this.workers = [];
 
   for (var i = 0; i < this.MAX_WORKERS; i++) {
@@ -91,27 +123,8 @@ var WorkersPool = function(options) {
     this.workers.push(new Worker(workerId));
   }
 
-  this.nextW = 0;
-  this.nextWorker = function() {
-    if (this.nextW < this.MAX_WORKERS - 1) {
-      this.nextW = this.nextW + 1;
-    } else {
-      this.nextW = 0;
-    }
-    return this.nextW;
-  };
-
   this.addJob = function(job) {
-    // for (var k = 0; k < this.MAX_WORKERS; k++) {
-    //   if ( this.workers[k].idle() ){
-    //     this.workers[k].addJob(job);
-    //     return;
-    //   }
-    // }
-    // var j = Math.floor(Math.random() * this.MAX_WORKERS);
-    // this.workers[j].addJob(job);
-    var l = this.nextWorker();
-    this.workers[l].addJob(job);
+    this.strategy.addJob(job, this.workers);
   };
 
   this.totalTime = 0;
