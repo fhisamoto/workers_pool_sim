@@ -37,7 +37,7 @@
       return graph;
     }
 
-    var pool = new WorkersPool();
+    var pool = new WorkersPool({ numWorkers: 30 });
     function onLoad() {
       pool.workers.forEach(function(worker) {
         var progressBar = '<div class="progress progress-info progress-striped"><div id="' + worker.workerId + '" class="bar" style="width:0%"></div></div>';

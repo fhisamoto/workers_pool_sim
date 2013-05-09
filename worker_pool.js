@@ -82,8 +82,8 @@ var Summary = function(numJobs, totalTime, totalTime2) {
   };
 }
 
-var WorkersPool = function() {
-  this.MAX_WORKERS = 35;
+var WorkersPool = function(options) {
+  this.MAX_WORKERS = (options && options.numWorkers) ? options.numWorkers : 30;
   this.workers = [];
 
   for (var i = 0; i < this.MAX_WORKERS; i++) {
