@@ -7,7 +7,7 @@ var Job = function() {
      var c = Math.sqrt(-2 * Math.log(r) / r);
      return u * c;
   }
-  this.processTime = (gaussRandom() * 0.0) + 120.0;
+  this.processTime = (gaussRandom() * 50.0) + 600.0;
   this.startTime = (new Date()).getTime();
   this.endTime = null;
   this.execute = function(onComplete) {
@@ -43,7 +43,7 @@ var Worker = function(workerId) {
         worker.totalTime2 += totalTime * totalTime;
         worker.numJobs += 1;
 
-        // console.log("Job[" + id + "] Completed.");
+        console.log("Job[" + id + "] Completed.");
         var percent = (worker.jobs.length / worker.MAX_JOBS) * 100;
         $('#' + worker.workerId).css('width',  percent + '%');
 
@@ -97,19 +97,21 @@ var RoundRobinStrategy = function() {
 
 var RandomWorkerStrategy= function() {
   this.addJob = function(job, workers) {
-    var j = Math.floor(Math.random() * workers.lenght);
+    var j = Math.floor(Math.random() * workers.length);
     workers[j].addJob(job);
   };
 };
 
 var FirstAvailableStrategy = function() {
   this.addJob = function(job, workers) {
-    for (var k = 0; k < workers.length; k++) {
-      if ( workers[k].idle() ){
-        workers[k].addJob(job);
+    for (var j = 0; j < workers.length; j++) {
+      if ( workers[j].idle() ){
+        workers[j].addJob(job);
         return;
       }
     }
+    var j = Math.floor(Math.random() * workers.length);
+    workers[j].addJob(job);
   };
 };
 
