@@ -10,6 +10,7 @@ var Job = function() {
   this.processTime = (gaussRandom() * 50.0) + 600.0;
   this.startTime = (new Date()).getTime();
   this.endTime = null;
+
   this.execute = function(onComplete) {
     var job = this;
     return setTimeout(function() {
@@ -20,6 +21,51 @@ var Job = function() {
   };
   return this;
 };
+
+var Job2 = function(f, args) {
+  this.func = f;
+  this.args = args;
+  this.startTime = (new Date()).getTime();
+  this.endTime = null;
+
+  this.onComplete = function(job) {
+    console.log("Completed.");
+  };
+
+  var _execute = function(job) {
+    job.func(job.args);
+    job.endTime = (new Date()).getTime();
+    job.onComplete(job);
+  };
+
+  this.execute = function() {
+    return setTimeout(_execute(this) , 100);
+  }
+
+  return this;
+}
+
+var GaussianJob = function(f, args) {
+  var job = new Job2(f, args);
+
+  var gaussRandom = function () {
+     var u = 2 * Math.random() - 1;
+     var v = 2 * Math.random() - 1;
+     var r = u * u + v * v;
+     if (r == 0 || r > 1) return gaussRandom();
+     var c = Math.sqrt(-2 * Math.log(r) / r);
+     return u * c;
+  };
+  job.processTime = (gaussRandom() * 50.0) + 100.0;
+
+  job.execute = function() {
+    return setTimeout(function() {
+    }, job.processTime);
+  };
+
+  return job;
+}
+
 
 var Worker = function(workerId) {
   this.workerId = workerId;
@@ -37,18 +83,18 @@ var Worker = function(workerId) {
   this.pullJobs = function() {
     var worker = this;
     if (this.jobs[0]) {
-      var id = this.jobs[0].execute(function(totalTime) {
+      this.jobs[0].onComplete = function(job) {
         worker.jobs.shift();
+        var totalTime = job.endTime - job.startTime;
         worker.totalTime += totalTime;
         worker.totalTime2 += totalTime * totalTime;
         worker.numJobs += 1;
 
-        console.log("Job[" + id + "] Completed.");
-        var percent = (worker.jobs.length / worker.MAX_JOBS) * 100;
-        $('#' + worker.workerId).css('width',  percent + '%');
+        console.log("Job Completed.");
 
         worker.pullJobs();
-      });
+      };
+      this.jobs[0].execute();
     }
   };
 

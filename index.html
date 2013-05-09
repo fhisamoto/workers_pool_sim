@@ -37,7 +37,7 @@
       return graph;
     }
 
-    var pool = new WorkersPool({ numWorkers: 30 });
+    var pool = new WorkersPool({ numWorkers: 5, strategy: new FirstAvailableStrategy() });
     function onLoad() {
       pool.workers.forEach(function(worker) {
         var progressBar = '<div class="progress progress-info progress-striped"><div id="' + worker.workerId + '" class="bar" style="width:0%"></div></div>';
@@ -47,7 +47,7 @@
 
     function createJobs() {
       setInterval(function() {
-        for(var i = 0; i < 25; i++) { pool.addJob(new Job()); }
+        for(var i = 0; i < 25; i++) { pool.addJob(new Job2(function(){}, null)); }
       }, 100);
 
       var graph = createGraph();
