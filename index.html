@@ -9,19 +9,19 @@
 </head>
 <body>
   <div class="container">
-    <p>
-      <button id="create-jobs" class="btn btn-large btn-primary" type="button">Create Jobs</button>
-    </p>
-    <input id="pAvg" type="text" class="input-small" placeholder="avg">
-    <input id="pStd" type="text" class="input-small" placeholder="std"><br>
-    <input id="avg" type="text" class="input-small" placeholder="avg">
-    <input id="std" type="text" class="input-small" placeholder="std">
-    <input id="jobs" type="text" class="input-small" placeholder="num jobs">
-    <div id="chart_container">
-      <div id="chart"></div>
+    <div class="row">
+      <div class="span4">
+        <button id="create-jobs" class="btn btn-large btn-primary" type="button">Create Jobs</button>
+      </div>
+      <div class="span8">
+        <input id="pAvg" type="text" class="input-small" placeholder="avg">
+        <input id="pStd" type="text" class="input-small" placeholder="std"><br>
+        <input id="avg" type="text" class="input-small" placeholder="avg">
+        <input id="std" type="text" class="input-small" placeholder="std">
+        <input id="jobs" type="text" class="input-small" placeholder="num jobs">
+          <div id="sim_bars" style="width:400px"></div>
+      </div>
     </div>
-    <div id="legend"></div><br>
-    <div id="sim_bars" style="width:400px"></div>
   </div>
 </body>
 

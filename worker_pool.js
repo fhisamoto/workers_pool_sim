@@ -7,9 +7,11 @@ var Job = function() {
      var c = Math.sqrt(-2 * Math.log(r) / r);
      return u * c;
   }
-  this.processTime = (gaussRandom() * 50.0) + 600.0;
+
+  this.processTime = (gaussRandom() * 50.0) + 400.0;
   this.startTime = (new Date()).getTime();
   this.endTime = null;
+
   this.execute = function(onComplete) {
     var job = this;
     return setTimeout(function() {
@@ -35,8 +37,8 @@ var Worker = function(workerId) {
   };
 
   this.pullJobs = function() {
-    var worker = this;
     if (this.jobs[0]) {
+      var worker = this;
       var id = this.jobs[0].execute(function(totalTime) {
         worker.jobs.shift();
         worker.totalTime += totalTime;
