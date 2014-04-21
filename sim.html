@@ -98,17 +98,16 @@
       }
 
       var RoundRobinStrategy = function(workers) {
-        this.workers = workers;
+        var i = 0;
 
-        this.worker = 0;
-        this.nextWorker = function() {
-          this.worker = (this.worker < this.workers.length - 1) ? this.worker + 1: 0;
+        var inc = function() {
+          i = (i < workers.length - 1) ? i + 1: 0;
         }
 
         this.addJob = function(li) {
-          $(this.workers[this.worker]).append(li).fadeIn(1000);
-          $(this.workers[this.worker]).trigger('job-added');
-          this.nextWorker();
+          $(workers[i]).append(li).fadeIn(1000);
+          $(workers[i]).trigger('job-added');
+          inc();
         };
 
         return this;
