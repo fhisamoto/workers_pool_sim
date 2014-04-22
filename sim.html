@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <link href="lib/bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen">
+  <link href="sim.css" rel="stylesheet">
+
+  <script src="http://code.jquery.com/jquery.js"></script>
+  <script src="lib/bootstrap/js/bootstrap.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <div class="row">
+      <div class="span4">
+        <button id="create-jobs" class="btn btn-large btn-primary" type="button">Create Jobs</button>
+        <div class="mini-layout measurement">
+          <h1>Latency</h1>
+          <h4>in (ms)</h4>
+          <p>Mean:<span id="latency-mean"></span></p>
+          <p>Std dev:<span id="latency-std"></span></p>
+        </div>
+
+        <div class="mini-layout measurement">
+          <h1>#job: <span id="num-jobs">0</span></h1>
+        </div>
+      </div>
+      <div class="span8">
+        <div id="workers"></div>
+      </div>
+    </div>
+  </div>
+</body>
+
+<script>
+  $(function() {
+    var Measurement = function() {
+      this.num = 0;
+      this.totalTime = 0;
+      this.totalTime2 = 0;
+
+      this.inc = function(num, totalTime, totalTime2) {
+        this.num += num;
+        this.totalTime += totalTime;
+        this.totalTime2 += totalTime2;
+      }
+
+      this.average =  function() {
+        if (this.num > 0) {
+          return this.totalTime / this.num;
+        }
+        return 0;
+      };
+
+      this.standardDeviation = function() {
+        var avg = this.average();
+        if (avg > 0) {
+          return Math.sqrt(this.totalTime2 / this.num - (avg * avg));
+        }
+        return 0;
+      };
+    }
+
+    var Job = function() {
+      this.domElement = $('<li class="job" data-request-time="' + this.requestTime + '">.</li>');
+
+      this.requestTime = (new Date()).getTime();
+      this.endTime = null;
+
+      this.totalTime = function() {
+        return this.endTime - this.requestTime;
+      }
+
+      var gaussRandom = function () {
+         var u = 2 * Math.random() - 1;
+         var v = 2 * Math.random() - 1;
+         var r = u * u + v * v;
+         if (r == 0 || r > 1) return gaussRandom();
+         var c = Math.sqrt(-2 * Math.log(r) / r);
+         return u * c;
+      }
+
+      this.processTime = function() {
+        return (gaussRandom() * 50.0) + 400.0;
+      }
+
+      this.execute = function() {
+        var job = this;
+        return setTimeout(function() {
+          job.endTime = (new Date()).getTime();
+          job.domElement.parent().trigger('job-finished', { job: job });
+        }, this.processTime());
+      }
+      return this;
+    };
+
+
+    var Worker = function() {
+      var worker = { 'domElement': $('<ul class="worker-queue well"></ul>') };
+      var jobs = [];
+
+      worker.domElement.on('job-added', function(e, params) {
+        if (jobs.length === 1) {
+          var job = params['job'];
+          job.execute();
+        }
+      });
+
+      worker.domElement.on('job-finished', function(e, params) {
+        var job = jobs.shift();
+        job.domElement.remove();
+
+        var totalTime = job.totalTime();
+
+        var latency = new Measurement();
+        latency.inc(1, totalTime, totalTime * totalTime);
+        $(document).trigger('summarize', { latency: latency });
+
+        if (jobs.length > 0) {
+          jobs[0].execute();
+        }
+      });
+
+      worker.addJob = function(job) {
+        jobs.push(job);
+        worker.domElement.append(job.domElement);
+        worker.domElement.trigger('job-added', { job: job });
+      }
+
+      return worker;
+    }
+
+    var WorkerPool = function(options) {
+      var MAX_WORKERS = 20;
+      this.domElement = $('#workers');
+
+      this.workers = [];
+      for (var i = 0; i < MAX_WORKERS; i++) {
+        var worker = new Worker();
+        this.workers.push(worker);
+        this.domElement.append(worker.domElement);
+      }
+
+
+      var RoundRobinStrategy = function(workers) {
+        var i = 0;
+        var inc = function() {
+          i = (i < workers.length - 1) ? i + 1: 0;
+        }
+
+        this.getWorker = function() {
+          var worker = workers[i];
+          inc();
+          return worker;
+        }
+
+        return this;
+      };
+
+      this.strategy = new RoundRobinStrategy(this.workers);
+      this.addJob = function() {
+        this.strategy.getWorker().addJob(new Job());
+      };
+
+      return this;
+    };
+
+    var pool = new WorkerPool();
+
+    var latency = new Measurement();
+    $(document).on('summarize', function(event, params) {
+      var l = params['latency'];
+      latency.inc(l.num, l.totalTime, l.totalTime2);
+      $('#latency-mean').html(latency.average().toFixed(0));
+      $('#latency-std').html(latency.standardDeviation().toFixed(0));
+      $('#num-jobs').html(latency.num);
+    })
+
+    $('#create-jobs').on('click', function() {
+      var CONCURRENT_JOBS = 400;
+      for(var i = 0; i < CONCURRENT_JOBS; i++) {
+        pool.addJob();
+      }
+    });
+  });
+</script>
+
+</html>

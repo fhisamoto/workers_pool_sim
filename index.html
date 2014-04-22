@@ -2,98 +2,62 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen">
+  <link href="lib/bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen">
+
   <script src="http://code.jquery.com/jquery.js"></script>
-  <script src="bootstrap/js/bootstrap.min.js"></script>
-
-  <link href="rickshaw/rickshaw.min.css" rel="stylesheet">
-  <script src="rickshaw/vendor/d3.v2.js"></script>
-  <script src="rickshaw/rickshaw.min.js"></script>
+  <script src="lib/bootstrap/js/bootstrap.min.js"></script>
   <script src="worker_pool.js"></script>
-  <script>
-    function createGraph() {
-      var palette = new Rickshaw.Color.Palette();
-      var graph = new Rickshaw.Graph ( {
-        element: document.querySelector("#chart"),
-        renderer: 'line',
-        width: 550,
-        height: 250,
-        series: [ {
-          name: 'Average',
-          color: palette.color(),
-          data: [ { x: 0, y: 0 } ]
-        }, {
-          name: 'Standard deviation',
-          color: palette.color(),
-          data: [ { x: 0, y: 0 } ]
-        } ]
-      });
-      var yAxis = new Rickshaw.Graph.Axis.Y ({ graph: graph });
-      var xAxis = new Rickshaw.Graph.Axis.X ({ graph: graph });
-      var legend = new Rickshaw.Graph.Legend({
-        element: document.querySelector('#legend'),
-        graph: graph
-      });
-      return graph;
-    }
-
-    var pool = new WorkersPool({ numWorkers: 30 });
-    function onLoad() {
-      pool.workers.forEach(function(worker) {
-        var progressBar = '<div class="progress progress-info progress-striped"><div id="' + worker.workerId + '" class="bar" style="width:0%"></div></div>';
-        $('#sim_bars').append(progressBar);
-      });
-    }
-
-    function createJobs() {
-      setInterval(function() {
-        for(var i = 0; i < 25; i++) { pool.addJob(new Job()); }
-      }, 100);
-
-      var graph = createGraph();
-      graph.render();
-
-      var i = 0;
-      var summary = null;
-      var lastSummary = null;
-      setInterval(function(){
-        summary = pool.summarize();
-        if (lastSummary) {
-          var diffSummary = new Summary(summary.numJobs - lastSummary.numJobs,
-            summary.totalTime - lastSummary.totalTime,
-            summary.totalTime2 - lastSummary.totalTime2
-          );
-          $('#pAvg').val(diffSummary.average());
-          $('#pStd').val(diffSummary.standardDeviation());
-
-          graph.series[0].data.push({ x: i, y: diffSummary.average() });
-          graph.series[1].data.push({ x: i, y: diffSummary.standardDeviation() });
-          graph.update();
-          i++;
-        }
-        $('#jobs').val(summary.numJobs);
-        $('#avg').val(summary.average());
-        $('#std').val(summary.standardDeviation());
-        lastSummary = summary;
-      }, 1000);
-    }
-  </script>
 </head>
-<body onLoad="onLoad()">
+<body>
   <div class="container">
-    <p>
-      <button class="btn btn-large btn-primary" type="button" onClick="createJobs()">Create Jobs</button>
-    </p>
-    <input id="pAvg" type="text" class="input-small" placeholder="avg">
-    <input id="pStd" type="text" class="input-small" placeholder="std"><br>
-    <input id="avg" type="text" class="input-small" placeholder="avg">
-    <input id="std" type="text" class="input-small" placeholder="std">
-    <input id="jobs" type="text" class="input-small" placeholder="num jobs">
-    <div id="chart_container">
-      <div id="chart"></div>
+    <div class="row">
+      <div class="span4">
+        <button id="create-jobs" class="btn btn-large btn-primary" type="button">Create Jobs</button>
+      </div>
+      <div class="span8">
+        <input id="pAvg" type="text" class="input-small" placeholder="avg">
+        <input id="pStd" type="text" class="input-small" placeholder="std"><br>
+        <input id="avg" type="text" class="input-small" placeholder="avg">
+        <input id="std" type="text" class="input-small" placeholder="std">
+        <input id="jobs" type="text" class="input-small" placeholder="num jobs">
+        <div id="sim_bars" style="width:400px"></div>
+      </div>
     </div>
-    <div id="legend"></div><br>
-    <div id="sim_bars" style="width:400px"></div>
   </div>
 </body>
+
+<script>
+    $(function() {
+        var pool = new WorkersPool(null);
+        pool.workers.forEach(function(worker) {
+            var progressBar = '<div class="progress progress-info progress-striped"><div id="' + worker.workerId + '" class="bar" style="width:0%"></div></div>';
+            $('#sim_bars').append(progressBar);
+        });
+
+        $("#create-jobs").on('click', function(){
+            setInterval(function() {
+                for(var i = 0; i < 25; i++) { pool.addJob(new Job()); }
+            }, 100);
+
+            var summary = null;
+            var lastSummary = null;
+            setInterval(function(){
+              summary = pool.summarize();
+              if (lastSummary !== null) {
+                var diffSummary = new Summary(summary.numJobs - lastSummary.numJobs,
+                  summary.totalTime - lastSummary.totalTime,
+                  summary.totalTime2 - lastSummary.totalTime2
+                );
+                $('#pAvg').val(diffSummary.average());
+                $('#pStd').val(diffSummary.standardDeviation());
+              }
+              $('#jobs').val(summary.numJobs);
+              $('#avg').val(summary.average());
+              $('#std').val(summary.standardDeviation());
+              lastSummary = summary;
+            }, 1000);
+        });
+    })
+</script>
+
 </html>
