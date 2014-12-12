@@ -19,17 +19,13 @@ a {
 .job {
   margin-right: 1px;
   margin-top: 1px;
-  border: 1px solid #57f269;
   display: inline-block;
-  background-color: #57f269;
 }
 
 .bug {
   margin-right: 1px;
   margin-top: 1px;
-  border: 1px solid #57f269;
   display: inline-block;
-  background-color: #ff0000;
 }
 
 .measurement {
