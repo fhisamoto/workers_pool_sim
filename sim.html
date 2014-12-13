@@ -19,10 +19,16 @@
           <div id="workers-tests-features" class="panel-body">
             <p>Tests features</p>
           </div>
+          <div class="panel-footer">
+            <p>Latency: <span class="latency badge">0</span></p>
+          </div>
         </div>
         <div class="panel panel-default">
           <div id="workers-does-not-tests-features" class="panel-body">
             <p>Without tests</p>
+          </div>
+          <div class="panel-footer">
+            <p>Latency: <span class="latency badge">0</span></p>
           </div>
         </div>
         <button id="create-jobs" class="btn btn-large btn-primary" type="button">Create Jobs</button>
@@ -63,7 +69,6 @@
     this.domElement = $('<li class="job label label-success" data-request-time="' + this.requestTime + '">$</li>');
     this.sigma = sigma;
     this.mu = mu;
-
     this.requestTime = (new Date()).getTime();
     this.endTime = null;
 
@@ -94,7 +99,6 @@
     return this;
   };
 
-
   var Bug = function() {
     var bug = new Job(1000, 300);
     bug.domElement = $('<li class="bug label label-danger" data-request-time="' + this.requestTime + '">b</li>');
@@ -120,12 +124,13 @@
 
     worker.domElement.on('job-finished', function(e, params) {
       var job = jobs.shift();
-      job.domElement.remove();
 
-      // var totalTime = job.totalTime();
-      // var latency = new Measurement();
-      // latency.inc(1, totalTime, totalTime * totalTime);
-      // $(document).trigger('summarize', { latency: latency });
+      var totalTime = job.totalTime();
+      var latency = new Measurement();
+      latency.inc(1, totalTime, totalTime * totalTime);
+      worker.domElement.parent().trigger('summarize', { latency: latency });
+
+      job.domElement.remove();
 
       if (addsNewBug()) {
         worker.addJob(new Bug());
@@ -155,6 +160,16 @@
       this.workers.push(worker);
       this.domElement.append(worker.domElement);
     };
+
+    var latency = new Measurement();
+    this.domElement.on('summarize', function(event, params) {
+      var l = params['latency'];
+
+      latency.inc(l.num, l.totalTime, l.totalTime2);
+      $(this).parent().find(".latency").html(latency.average().toFixed(0));
+      // $('#latency-std').html(latency.standardDeviation().toFixed(0));
+      // $('#num-jobs').html(latency.num);
+    });
 
     var RoundRobinStrategy = function(workers) {
       var i = 0;
@@ -190,17 +205,8 @@
     var pool2 = new WorkerPool({ domElement: $('#workers-does-not-tests-features') });
     pool2.addWorker(new Worker({ bugProbability: 0.5 }));
 
-    // var latency = new Measurement();
-    // $(document).on('summarize', function(event, params) {
-    //   var l = params['latency'];
-    //   latency.inc(l.num, l.totalTime, l.totalTime2);
-    //   $('#latency-mean').html(latency.average().toFixed(0));
-    //   $('#latency-std').html(latency.standardDeviation().toFixed(0));
-    //   $('#num-jobs').html(latency.num);
-    // });
-
     var newJobs = function() {
-      var CONCURRENT_JOBS = 10;
+      var CONCURRENT_JOBS = 5;
       for(var i = 0; i < CONCURRENT_JOBS; i++) {
         pool.addJob();
         pool2.addJob();
