@@ -59,7 +59,7 @@
     };
   }
 
-  var Job = function(sigma, mu) {
+  var Job = function(mu, sigma) {
     this.domElement = $('<li class="job label label-success" data-request-time="' + this.requestTime + '">$</li>');
     this.sigma = sigma;
     this.mu = mu;
@@ -171,13 +171,13 @@
       return this;
     };
 
-    this.strategy = new RoundRobinStrategy(this.workers);
+    var strategy = new RoundRobinStrategy(this.workers);
 
     this.addJob = function() {
       var jobTime = 1000 + this.testAdditionalTime;
       var jobSigma = 300;
 
-      this.strategy.getWorker().addJob(new Job(jobTime, jobSigma));
+      strategy.getWorker().addJob(new Job(jobTime, jobSigma));
     };
 
     return this;
